@@ -93,15 +93,6 @@
                     app:iconTint="@color/white"
                     app:backgroundTint="@color/primary_button_background_color"/>
 
-                <include
-                    android:id="@+id/space_header"
-                    layout="@layout/space_header"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:visibility="gone"
-                    app:layout_constraintTop_toTopOf="parent"
-                    tools:visibility="visible"/>
-
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/recyclerView_main_file_list"
                     android:layout_width="match_parent"
@@ -109,7 +100,7 @@
                     android:scrollbars="vertical"
                     tools:listitem="@layout/item_file_list"
                     app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/space_header"/>
+                    app:layout_constraintTop_toTopOf="parent" />
 
                 <include
                     android:id="@+id/empty_data_parent"
@@ -119,7 +110,7 @@
                     android:layout_gravity="center"
                     android:visibility="gone"
                     app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/space_header" />
+                    app:layout_constraintTop_toTopOf="parent" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 

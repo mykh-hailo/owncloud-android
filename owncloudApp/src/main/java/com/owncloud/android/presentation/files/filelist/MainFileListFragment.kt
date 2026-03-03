@@ -54,6 +54,7 @@ import androidx.core.view.isVisible
 import androidx.core.widget.doOnTextChanged
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import coil.load
@@ -113,7 +114,6 @@ import com.owncloud.android.presentation.files.removefile.RemoveFilesDialogFragm
 import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragment
 import com.owncloud.android.presentation.files.renamefile.RenameFileDialogFragment.Companion.FRAGMENT_TAG_RENAME_FILE
 import com.owncloud.android.presentation.spaces.SpacesListViewModel
-import com.owncloud.android.presentation.thumbnails.ThumbnailsRequester
 import com.owncloud.android.presentation.transfers.TransfersViewModel
 import com.owncloud.android.ui.activity.FileActivity
 import com.owncloud.android.ui.activity.FileDisplayActivity
@@ -163,6 +163,7 @@ class MainFileListFragment : Fragment(),
     private val binding get() = _binding!!
 
     private lateinit var layoutManager: StaggeredGridLayoutManager
+    private lateinit var spaceHeaderAdapter: SpaceHeaderAdapter
     private lateinit var fileListAdapter: FileListAdapter
     private lateinit var viewType: ViewType
 
@@ -380,6 +381,7 @@ class MainFileListFragment : Fragment(),
         // Set RecyclerView and its adapter.
         binding.recyclerViewMainFileList.layoutManager = layoutManager
 
+        spaceHeaderAdapter = SpaceHeaderAdapter()
         fileListAdapter = FileListAdapter(
             context = requireContext(),
             layoutManager = layoutManager,
@@ -388,7 +390,7 @@ class MainFileListFragment : Fragment(),
             isMultiPersonal = isMultiPersonal
         )
 
-        binding.recyclerViewMainFileList.adapter = fileListAdapter
+        binding.recyclerViewMainFileList.adapter = ConcatAdapter(spaceHeaderAdapter, fileListAdapter)
 
         // Set Swipe to refresh and its listener
         binding.swipeRefreshMainFileList.isEnabled = mainFileListViewModel.fileListOption.value != FileListOption.AV_OFFLINE
@@ -806,34 +808,18 @@ class MainFileListFragment : Fragment(),
         collectLatestLifecycleFlow(mainFileListViewModel.fileListUiState) { fileListUiState ->
             if (fileListUiState !is MainFileListViewModel.FileListUiState.Success) return@collectLatestLifecycleFlow
 
+            spaceHeaderAdapter.state = SpaceHeaderAdapter.State(
+                space = fileListUiState.space,
+                folderRemotePath = fileListUiState.folderToDisplay?.remotePath,
+                fileListOption = fileListUiState.fileListOption,
+                isMultiPersonal = isMultiPersonal,
+            )
+
             fileListAdapter.updateFileList(
                 filesToAdd = fileListUiState.folderContent,
                 fileListOption = fileListUiState.fileListOption,
             )
             showOrHideEmptyView(fileListUiState)
-
-            binding.spaceHeader.root.apply {
-                if ((fileListUiState.space?.isProject == true || (fileListUiState.space?.isPersonal == true && isMultiPersonal)) &&
-                    fileListUiState.folderToDisplay?.remotePath == ROOT_PATH && fileListUiState.fileListOption != FileListOption.AV_OFFLINE) {
-                    isVisible = true
-                    animate().translationY(0f).duration = 100
-                } else {
-                    animate().translationY(-height.toFloat()).withEndAction { isVisible = false }
-                }
-            }
-
-            val spaceSpecialImage = fileListUiState.space?.getSpaceSpecialImage()
-            if (spaceSpecialImage != null) {
-                binding.spaceHeader.spaceHeaderImage.load(
-                    ThumbnailsRequester.getPreviewUriForSpaceSpecial(spaceSpecialImage),
-                    ThumbnailsRequester.getCoilImageLoader()
-                ) {
-                    placeholder(R.drawable.ic_spaces)
-                    error(R.drawable.ic_spaces)
-                }
-            }
-            binding.spaceHeader.spaceHeaderName.text = fileListUiState.space?.name
-            binding.spaceHeader.spaceHeaderSubtitle.text = fileListUiState.space?.description
 
             actionMode?.invalidate()
         }
